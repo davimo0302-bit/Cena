@@ -1,0 +1,187 @@
+import streamlit as st
+import pandas as pd
+import os
+
+# ---------------------------------------------------------
+# CONFIGURACIÓN DE LA PÁGINA
+# ---------------------------------------------------------
+st.set_page_config(
+    page_title="Protocolo - Alcaldía de Barranquilla",
+    page_icon="🏛️",
+    layout="wide"
+)
+
+# ---------------------------------------------------------
+# CSS PARA INTERFAZ OSCURA Y BRANDING DE LA ALCALDÍA
+# ---------------------------------------------------------
+st.markdown("""
+    <style>
+    /* Fondo principal oscuro */
+    .stApp {
+        background-color: #0d1117;
+        color: #e6edf3;
+    }
+    
+    /* Encabezado Institucional */
+    .baq-header {
+        background-color: #161b22;
+        padding: 2rem;
+        border-radius: 12px;
+        border-bottom: 4px solid #DFFF9A;
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+    
+    .baq-title {
+        color: #DFFF9A;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        font-size: 38px;
+        font-weight: 800;
+        letter-spacing: 2px;
+        margin: 0;
+    }
+
+    .baq-subtitle {
+        color: #8b949e;
+        font-size: 1.1rem;
+        margin-top: 10px;
+    }
+    
+    /* Tarjetas de resultados (Cards) */
+    .guest-card {
+        background-color: #1c2128;
+        border: 1px solid #30363d;
+        border-left: 6px solid #DFFF9A;
+        padding: 1.5rem;
+        border-radius: 10px;
+        margin-bottom: 1rem;
+        transition: transform 0.2s ease-in-out;
+    }
+    
+    .guest-card:hover {
+        transform: translateY(-5px);
+        border-color: #DFFF9A;
+    }
+    
+    .guest-name {
+        color: #DFFF9A;
+        font-size: 22px;
+        font-weight: bold;
+        margin-bottom: 0.5rem;
+    }
+
+    .label {
+        color: #8b949e;
+        font-weight: bold;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        margin-right: 5px;
+    }
+
+    /* Limpiar alertas y mensajes innecesarios */
+    .stAlert {
+        background-color: #161b22 !important;
+        border: 1px solid #30363d !important;
+        color: #e6edf3 !important;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+# ---------------------------------------------------------
+# LÓGICA DE CARGA DE DATOS (EXCEL)
+# ---------------------------------------------------------
+def cargar_datos():
+    # Nombre exacto que aparece en tu repositorio de GitHub
+    archivo = "Alojamiento de puestos - CENA.xlsx"
+    
+    if os.path.exists(archivo):
+        try:
+            # Cargamos el archivo y limpiamos espacios en los nombres de columnas
+            df = pd.read_excel(archivo)
+            df.columns = df.columns.str.strip()
+            return df
+        except Exception as e:
+            st.error(f"Error al procesar el archivo Excel: {e}")
+            return None
+    return None
+
+def main():
+    # Renderizado del Header
+    st.markdown("""
+        <div class="baq-header">
+            <h1 class="baq-title">ALCALDÍA DE BARRANQUILLA</h1>
+            <p class="baq-subtitle">Sistema Digital de Gestión de Protocolo y Eventos</p>
+        </div>
+    """, unsafe_allow_html=True)
+
+    df = cargar_datos()
+
+    if df is not None:
+        # Barra lateral (Sidebar) personalizada
+        with st.sidebar:
+            # Logo del Escudo de Barranquilla
+            st.image("https://upload.wikimedia.org/wikipedia/commons/e/ea/Escudo_de_Barranquilla.svg", width=130)
+            st.markdown("<br>", unsafe_allow_html=True)
+            st.markdown("### PANEL DE CONTROL")
+            
+            # Usamos un selectbox para navegar entre las funciones del taller
+            opcion = st.selectbox(
+                "¿Qué desea hacer?",
+                ["🔍 Buscar Invitado", "🌐 Listar Idiomas Disponibles", "📋 Ver Base de Datos Completa"]
+            )
+            
+            st.markdown("---")
+            st.info("Sistema optimizado para eventos oficiales.")
+
+        # --- OPCIÓN 1: BÚSQUEDA (LÓGICA DEL TALLER) ---
+        if "Buscar" in opcion:
+            st.subheader("Buscador de Invitados")
+            termino = st.text_input("Ingrese el nombre, cargo u organización:", placeholder="Ej. Alejandro Char").strip()
+
+            if termino:
+                # Lógica de búsqueda por filas (contains) en todo el DataFrame
+                resultado = df[df.apply(lambda r: r.astype(str).str.contains(termino, case=False).any(), axis=1)]
+                
+                if not resultado.empty:
+                    st.write(f"Se encontraron **{len(resultado)}** resultado(s):")
+                    for _, fila in resultado.iterrows():
+                        st.markdown(f"""
+                        <div class="guest-card">
+                            <div class="guest-name">{fila.get('Name', 'Invitado sin nombre')}</div>
+                            <div><span class="label">Cargo:</span> {fila.get('Position', 'N/A')}</div>
+                            <div><span class="label">Organización:</span> {fila.get('Organisation', 'N/A')}</div>
+                            <div><span class="label">Idioma:</span> <span style="color: #DFFF9A;">{fila.get('Languages', 'N/A')}</span></div>
+                        </div>
+                        """, unsafe_allow_html=True)
+                else:
+                    st.warning(f"No se encontró información para: '{termino}'")
+
+        # --- OPCIÓN 2: LISTAR IDIOMAS ---
+        elif "Idiomas" in opcion:
+            st.subheader("Idiomas registrados")
+            if 'Languages' in df.columns:
+                lista_idiomas = df['Languages'].dropna().unique()
+                for idioma in lista_idiomas:
+                    st.markdown(f"📍 **{idioma}**")
+            else:
+                st.error("No se encontró la columna 'Languages' en el archivo.")
+
+        # --- OPCIÓN 3: VER TODA LA BASE ---
+        elif "Base" in opcion:
+            st.subheader("Listado General de Invitados")
+            st.dataframe(df, use_container_width=True)
+
+    else:
+        # Mensaje discreto si el archivo no está en GitHub
+        st.warning("⚠️ Base de datos no detectada automáticamente.")
+        st.write("Por favor, asegúrate de que el archivo **'Alojamiento de puestos - CENA.xlsx'** esté en tu repositorio de GitHub.")
+        
+        archivo_manual = st.file_uploader("O carga el archivo manualmente aquí:", type=["xlsx"])
+        if archivo_manual:
+            df_temp = pd.read_excel(archivo_manual)
+            st.session_state['df'] = df_temp
+            st.success("Archivo cargado temporalmente. Ya puedes usar el buscador.")
+            st.rerun()
+
+if __name__ == "__main__":
+    main()
