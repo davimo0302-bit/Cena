@@ -1,0 +1,229 @@
+import streamlit as st
+import pandas as pd
+import os
+import base64
+
+st.set_page_config(
+    page_title="Protocolo - Alcaldía de Barranquilla",
+    page_icon="🏛️",
+    layout="wide"
+)
+
+def get_base64_of_bin_file(bin_file):
+    """Convierte archivos locales a base64 para evitar errores de carga en el navegador."""
+    try:
+        with open(bin_file, 'rb') as f:
+            data = f.read()
+        return base64.b64encode(data).decode()
+    except Exception:
+        return None
+
+def apply_custom_styles(side_bg, logo_file):
+    bin_str = get_base64_of_bin_file(side_bg)
+    logo_str = get_base64_of_bin_file(logo_file)
+    
+    bg_img = f"data:image/jpeg;base64,{bin_str}" if bin_str else "https://www.swedishnomad.com/wp-content/images/2020/03/Barranquilla.jpg"
+    
+    st.markdown(f"""
+    <style>
+    @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@900&family=Urbanist:wght@300;400;700&display=swap');
+
+    .stApp {{
+        background-image: url("{bg_img}");
+        background-size: cover;
+        background-position: center;
+        background-attachment: fixed;
+    }}
+    
+    .stApp::before {{
+        content: "";
+        position: fixed;
+        top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0, 15, 35, 0.92); /* Azul profundo muy opaco para legibilidad */
+        backdrop-filter: blur(8px);
+        z-index: -1;
+    }}
+
+    /* Estilo Slogan Volkswagen Serial Black Style */
+    .baq-title {{
+        color: #FFFFFF;
+        font-family: 'Montserrat', sans-serif;
+        font-size: clamp(30px, 5vw, 60px);
+        font-weight: 900;
+        text-transform: uppercase;
+        text-align: center;
+        margin-top: 1rem;
+        letter-spacing: -1px;
+    }}
+
+    .baq-slogan {{
+        font-family: 'Montserrat', sans-serif;
+        font-size: 1.8rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        text-align: center;
+        margin-bottom: 3rem;
+    }}
+    .slogan-white {{ color: #FFFFFF; }}
+    .slogan-yellow {{ color: #DFFF9A; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); }}
+
+    /* Tarjetas de Invitados Estilo Protocolo */
+    .guest-card {{
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(223, 255, 154, 0.15);
+        border-left: 6px solid #DFFF9A;
+        padding: 1.8rem;
+        border-radius: 12px;
+        margin-bottom: 1.2rem;
+    }}
+    
+    .guest-name {{
+        color: #DFFF9A;
+        font-size: 24px;
+        font-weight: 800;
+        font-family: 'Montserrat', sans-serif;
+    }}
+
+    /* Logo Styling para evitar que se vea borroso */
+    .header-logo {{
+        display: block;
+        margin: 0 auto;
+        width: 100px;
+        image-rendering: -webkit-optimize-contrast;
+    }}
+
+    /* Footer Institucional */
+    .baq-footer {{
+        background-color: rgba(0, 5, 15, 0.98);
+        padding: 3rem 2rem;
+        border-top: 3px solid #DFFF9A;
+        margin-top: 5rem;
+        border-radius: 30px 30px 0 0;
+    }}
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    """, unsafe_allow_html=True)
+
+def cargar_datos():
+    archivo = "Alojamiento de puestos - CENA.xlsx"
+    if os.path.exists(archivo):
+        try:
+            df = pd.read_excel(archivo)
+            df.columns = df.columns.str.strip()
+            return df
+        except Exception:
+            return None
+    return None
+
+def main():
+    apply_custom_styles("fondo.jpeg", "logo.png")
+    
+    if os.path.exists("logo.png"):
+        st.image("logo.png", width=120)
+    else:
+        # Fallback al logo de Wikipedia si no está el archivo local
+        st.markdown('<div style="text-align:center"><img src="https://upload.wikimedia.org/wikipedia/commons/e/ea/Escudo_de_Barranquilla.svg" width="100"></div>', unsafe_allow_html=True)
+
+    st.markdown('<h1 class="baq-title">ALCALDÍA DE BARRANQUILLA</h1>', unsafe_allow_html=True)
+    st.markdown('''
+        <p class="baq-slogan">
+            <span class="slogan-white">Barranquilla</span> 
+            <span class="slogan-yellow">está de moda</span>
+        </p>
+    ''', unsafe_allow_html=True)
+
+    df = cargar_datos()
+
+    if df is not None:
+        with st.sidebar:
+            if os.path.exists("logo.png"):
+                st.image("logo.png", width=120)
+            else:
+                st.image("https://upload.wikimedia.org/wikipedia/commons/e/ea/Escudo_de_Barranquilla.svg", width=100)
+            
+            st.markdown("### PANEL DE PROTOCOLO")
+            
+            menu = st.radio(
+                "SELECCIONE UNA ACCIÓN:",
+                ["🔍 Buscar por nombre o cargo", "🌐 Filtrar por Idioma", "📋 Mostrar lista completa"],
+                index=0
+            )
+            
+            st.markdown("---")
+            st.info("Sistema de Gestión de Eventos • V.2.5")
+
+        if menu == "🔍 Buscar por nombre o cargo":
+            st.subheader("Buscador de Invitados")
+            termino = st.text_input("Ingrese el criterio de búsqueda:", placeholder="Nombre, cargo o entidad...").strip()
+            
+            if termino:
+                res = df[df.apply(lambda r: r.astype(str).str.contains(termino, case=False).any(), axis=1)]
+                if not res.empty:
+                    for _, fila in res.iterrows():
+                        st.markdown(f"""
+                        <div class="guest-card">
+                            <div style="display:flex; justify-content:space-between; align-items: center;">
+                                <span class="guest-name">{fila.get('Name', 'N/A')}</span>
+                                <span style="background:#DFFF9A; color:#001a35; padding: 4px 12px; border-radius:6px; font-weight:bold; font-size:11px;">MESA ASIGNADA</span>
+                            </div>
+                            <div style="margin-top:15px; display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; font-size:14px; color:#e2e8f0;">
+                                <p><i class="fa-solid fa-briefcase" style="color:#DFFF9A;"></i> {fila.get('Position', 'N/A')}</p>
+                                <p><i class="fa-solid fa-building" style="color:#DFFF9A;"></i> {fila.get('Organisation', 'N/A')}</p>
+                                <p><i class="fa-solid fa-language" style="color:#DFFF9A;"></i> {fila.get('Languages', 'N/A')}</p>
+                            </div>
+                        </div>
+                        """, unsafe_allow_html=True)
+                else:
+                    st.warning("No se encontraron resultados para su búsqueda.")
+            else:
+                st.write("Escriba arriba para comenzar la búsqueda.")
+
+        elif menu == "🌐 Filtrar por Idioma":
+            st.subheader("Filtrado por Idioma")
+            if 'Languages' in df.columns:
+                idiomas = ["Todos"] + list(df['Languages'].dropna().unique())
+                seleccion = st.selectbox("Seleccione el idioma:", idiomas)
+                
+                res = df if seleccion == "Todos" else df[df['Languages'] == seleccion]
+                st.write(f"Mostrando {len(res)} invitados que hablan {seleccion}.")
+                st.dataframe(res[['Name', 'Position', 'Languages']], use_container_width=True)
+            else:
+                st.error("Columna de idiomas no encontrada.")
+
+        elif menu == "📋 Mostrar lista completa":
+            st.subheader("Base de Datos de Protocolo")
+            st.write(f"Total de registros: {len(df)}")
+            st.dataframe(df, use_container_width=True)
+
+        st.markdown("""
+            <div class="baq-footer">
+                <div style="display: flex; flex-wrap: wrap; justify-content: space-around; gap: 40px; max-width: 1200px; margin: 0 auto;">
+                    <div>
+                        <h4 style="color:#DFFF9A; font-family:'Montserrat';">CONTACTO OFICIAL</h4>
+                        <p style="font-size:0.9rem; color:#cbd5e0;"><i class="fas fa-map-marker-alt"></i> Calle 34 # 43-31, Barranquilla</p>
+                        <p style="font-size:0.9rem; color:#cbd5e0;"><i class="fas fa-phone"></i> Línea Única: 195</p>
+                        <p style="font-size:0.9rem; color:#cbd5e0;"><i class="fas fa-envelope"></i> eventos@baq-edu-taller.gov.co</p>
+                    </div>
+                    <div>
+                        <h4 style="color:#DFFF9A; font-family:'Montserrat';">REDES DE PROTOCOLO</h4>
+                        <div style="display:grid; grid-template-columns: 1fr; gap:10px; font-size:0.85rem; color: #cbd5e0;">
+                            <span><i class="fab fa-instagram"></i> @ProtocoloDistritalBAQ</span>
+                            <span><i class="fab fa-facebook"></i> Alcaldía de Barranquilla Digital</span>
+                            <span><i class="fab fa-twitter"></i> @BAQ_EventosOficial</span>
+                        </div>
+                    </div>
+                </div>
+                <p style="text-align:center; margin-top:3rem; opacity:0.4; font-size:0.7rem;">© 2024 ALCALDÍA DE BARRANQUILLA • ACTIVIDAD ACADÉMICA DE PROTOCOLO</p>
+            </div>
+        """, unsafe_allow_html=True)
+
+    else:
+        st.warning("⚠️ Cargue el archivo 'Alojamiento de puestos - CENA.xlsx' para activar el sistema.")
+        file = st.file_uploader("Subir Archivo:", type=["xlsx"])
+        if file:
+            st.session_state['df'] = pd.read_excel(file)
+            st.rerun()
+
+if __name__ == "__main__":
+    main()
