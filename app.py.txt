@@ -1,0 +1,311 @@
+import streamlit as st
+import pandas as pd
+import os
+from PIL import Image
+
+# ---------------------------------------------------------
+# CONFIGURACIÓN DE LA PÁGINA
+# ---------------------------------------------------------
+st.set_page_config(
+    page_title="Protocolo - Alcaldía de Barranquilla",
+    page_icon="🏛️",
+    layout="wide"
+)
+
+# ---------------------------------------------------------
+# CSS PARA INTERFAZ AZUL INSTITUCIONAL (BAQ)
+# ---------------------------------------------------------
+st.markdown("""
+    <style>
+    /* Importando tipografías potentes */
+    @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@900&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Urbanist:wght@300;500;800&display=swap');
+
+    /* Fondo principal: Azul Oscuro Institucional */
+    .stApp {
+        background-color: #001a35; /* Azul muy oscuro de base */
+        color: #ffffff;
+    }
+    
+    /* Truco para que las imágenes no se vean borrosas */
+    img {
+        image-rendering: -webkit-optimize-contrast;
+        image-rendering: crisp-edges;
+    }
+    
+    /* Encabezado con degradado institucional */
+    .baq-header {
+        background: linear-gradient(90deg, #002A54 0%, #001a35 100%);
+        padding: 1.5rem;
+        border-radius: 12px;
+        border-bottom: 4px solid #DFFF9A; /* Verde lima institucional */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 25px;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    }
+    
+    .baq-title {
+        color: #DFFF9A;
+        font-family: 'Montserrat', sans-serif;
+        font-size: 38px;
+        font-weight: 900;
+        letter-spacing: 2px;
+        margin: 0;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+    }
+
+    .baq-slogan {
+        font-family: 'Montserrat', sans-serif;
+        font-size: 1.6rem;
+        font-weight: 900;
+        letter-spacing: -1px;
+        margin-top: 5px;
+        text-transform: uppercase;
+    }
+
+    .slogan-white {
+        color: #FFFFFF;
+    }
+
+    .slogan-yellow {
+        color: #FFD700; /* Amarillo vibrante */
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+    }
+
+    .baq-subtitle {
+        text-align: center;
+        color: #a0aec0;
+        font-size: 1.2rem;
+        margin-top: -1.5rem;
+        margin-bottom: 2rem;
+        font-weight: 300;
+    }
+    
+    /* Estilo para el Footer */
+    .baq-footer {
+        background-color: #000914;
+        color: #ffffff;
+        padding: 3rem 2rem;
+        border-top: 4px solid #DFFF9A;
+        margin-top: 4rem;
+        border-radius: 12px 12px 0 0;
+    }
+    
+    .footer-container {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-around;
+        gap: 30px;
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+    
+    .footer-col {
+        flex: 1;
+        min-width: 250px;
+    }
+    
+    .footer-col h4 {
+        color: #DFFF9A;
+        font-size: 1.2rem;
+        margin-bottom: 1rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+    
+    .footer-col p, .footer-col a {
+        color: #cbd5e0;
+        text-decoration: none;
+        font-size: 0.9rem;
+        display: block;
+        margin-bottom: 0.5rem;
+    }
+    
+    .footer-col a:hover {
+        color: #DFFF9A;
+    }
+
+    .social-icons {
+        display: flex;
+        gap: 15px;
+        margin-top: 10px;
+    }
+    
+    .social-icons i {
+        font-size: 1.5rem;
+    }
+
+    /* Tarjetas de invitados */
+    .guest-card {
+        background-color: #002d5a; 
+        border: 1px solid #003d7a;
+        border-left: 6px solid #DFFF9A;
+        padding: 1.5rem;
+        border-radius: 10px;
+        margin-bottom: 1rem;
+    }
+    
+    .guest-name {
+        color: #DFFF9A;
+        font-size: 24px;
+        font-weight: bold;
+    }
+
+    .label {
+        color: #cbd5e0;
+        font-weight: bold;
+        text-transform: uppercase;
+        font-size: 0.8rem;
+        margin-right: 8px;
+    }
+    </style>
+    <!-- Incluyendo FontAwesome para los iconos sociales -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    """, unsafe_allow_html=True)
+
+# ---------------------------------------------------------
+# LÓGICA DE CARGA DE DATOS (EXCEL)
+# ---------------------------------------------------------
+def cargar_datos():
+    archivo = "Alojamiento de puestos - CENA.xlsx"
+    if os.path.exists(archivo):
+        try:
+            df = pd.read_excel(archivo)
+            df.columns = df.columns.str.strip()
+            return df
+        except Exception as e:
+            st.error(f"Error al procesar el archivo Excel: {e}")
+            return None
+    return None
+
+def main():
+    # Renderizado del Header con Logo
+    logo_path = "logo.png" 
+    
+    col1, col2, col3 = st.columns([0.5, 4, 0.5])
+    
+    with col2:
+        st.markdown('<div class="baq-header">', unsafe_allow_html=True)
+        if os.path.exists(logo_path):
+            st.image(logo_path, width=110)
+        else:
+            st.image("https://upload.wikimedia.org/wikipedia/commons/e/ea/Escudo_de_Barranquilla.svg", width=90)
+            
+        st.markdown('''
+            <div style="display: flex; flex-direction: column; align-items: center;">
+                <h1 class="baq-title">ALCALDÍA DE BARRANQUILLA</h1>
+                <p class="baq-slogan">
+                    <span class="slogan-white">Barranquilla</span> 
+                    <span class="slogan-yellow">está de moda</span>
+                </p>
+            </div>
+        ''', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown('<p class="baq-subtitle">Dirección de Protocolo • Sistema de Registro de Invitados</p>', unsafe_allow_html=True)
+
+    df = cargar_datos()
+
+    if df is not None:
+        with st.sidebar:
+            if os.path.exists(logo_path):
+                st.image(logo_path, width=150)
+            else:
+                st.image("https://upload.wikimedia.org/wikipedia/commons/e/ea/Escudo_de_Barranquilla.svg", width=120)
+                
+            st.markdown("<br>", unsafe_allow_html=True)
+            st.markdown("### PANEL DE CONTROL")
+            
+            opcion = st.selectbox(
+                "¿Qué desea hacer?",
+                ["🔍 Buscar Invitado", "🌐 Listar Idiomas Disponibles", "📋 Ver Base de Datos Completa"]
+            )
+            
+            st.markdown("---")
+            st.info("Barranquilla Imparable • Protocolo Oficial")
+
+        if "Buscar" in opcion:
+            st.subheader("Buscador de Invitados")
+            termino = st.text_input("Ingrese el nombre, cargo u organización:", placeholder="Ej. Alejandro Char").strip()
+
+            if termino:
+                resultado = df[df.apply(lambda r: r.astype(str).str.contains(termino, case=False).any(), axis=1)]
+                
+                if not resultado.empty:
+                    st.write(f"Se encontraron **{len(resultado)}** resultado(s):")
+                    for _, fila in resultado.iterrows():
+                        st.markdown(f"""
+                        <div class="guest-card">
+                            <div class="guest-name">{fila.get('Name', 'Invitado sin nombre')}</div>
+                            <div><span class="label">Cargo:</span> <span style="color:#ffffff;">{fila.get('Position', 'N/A')}</span></div>
+                            <div><span class="label">Organización:</span> <span style="color:#ffffff;">{fila.get('Organisation', 'N/A')}</span></div>
+                            <div><span class="label">Idioma:</span> <span style="color: #DFFF9A;">{fila.get('Languages', 'N/A')}</span></div>
+                        </div>
+                        """, unsafe_allow_html=True)
+                else:
+                    st.warning(f"No se encontró información para: '{termino}'")
+
+        elif "Idiomas" in opcion:
+            st.subheader("Idiomas registrados")
+            if 'Languages' in df.columns:
+                lista_idiomas = df['Languages'].dropna().unique()
+                for idioma in lista_idiomas:
+                    st.markdown(f"📍 **{idioma}**")
+            else:
+                st.error("No se encontró la columna 'Languages' en el archivo.")
+
+        elif "Base" in opcion:
+            st.subheader("Listado General de Invitados")
+            st.dataframe(df, use_container_width=True)
+
+        # SECCIÓN DE FOOTER
+        st.markdown("""
+            <div class="baq-footer">
+                <div class="footer-container">
+                    <div class="footer-col">
+                        <h4>Contacto Oficial</h4>
+                        <p><i class="fas fa-map-marker-alt"></i> Paseo de la Castellana #99-01</p>
+                        <p><i class="fas fa-phone"></i> +57 (605) 555-0123</p>
+                        <p><i class="fas fa-envelope"></i> protocolo@baq-ficticio.gov.co</p>
+                    </div>
+                    <div class="footer-col">
+                        <h4>Atención al Ciudadano</h4>
+                        <p>Lunes a Viernes: 8:00 AM - 5:00 PM</p>
+                        <p>Línea Gratuita: 01-8000-999-BAQ</p>
+                        <a href="#">Política de Privacidad</a>
+                    </div>
+                    <div class="footer-col">
+                        <h4>Síguenos</h4>
+                        <div class="social-icons">
+                            <a href="#"><i class="fab fa-facebook"></i> AlcaldiaBaqOficial</a>
+                        </div>
+                        <div class="social-icons">
+                            <a href="#"><i class="fab fa-instagram"></i> @alcaldiabarranquilla_fake</a>
+                        </div>
+                        <div class="social-icons">
+                            <a href="#"><i class="fab fa-twitter"></i> @BAQ_Protocolo</a>
+                        </div>
+                    </div>
+                </div>
+                <div style="text-align: center; margin-top: 2rem; opacity: 0.5; font-size: 0.8rem;">
+                    <hr style="border-color: #30363d;">
+                    <p>© 2024 Alcaldía de Barranquilla - Actividad Académica de Protocolo Digital</p>
+                </div>
+            </div>
+        """, unsafe_allow_html=True)
+
+    else:
+        st.warning("⚠️ Base de datos no detectada automáticamente.")
+        st.write("Verifica que el archivo **'Alojamiento de puestos - CENA.xlsx'** esté en GitHub.")
+        
+        archivo_manual = st.file_uploader("O carga el archivo manualmente:", type=["xlsx"])
+        if archivo_manual:
+            df_temp = pd.read_excel(archivo_manual)
+            st.session_state['df'] = df_temp
+            st.success("Archivo cargado con éxito.")
+            st.rerun()
+
+if __name__ == "__main__":
+    main()
